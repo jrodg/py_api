@@ -3,14 +3,14 @@ LABEL maintainer="jrodg"
 
 ENV PYTHONUNBUFFERED 1
 
-COPY ./requirements.txt /tmp/requirements.txt
+COPY ./required_into.txt /tmp/required_into.txt
 COPY ./app /app
 WORKDIR /app
 EXPOSE 8000
 
 RUN python -m venv /py && \
     /py/bin/pip install --upgrade pip && \
-    /py/bin/pip install -r /tmp/requirements.txt && \
+    /py/bin/pip install -r /tmp/required_into.txt && \
     rm -rf /tmp && \
     adduser \
     --disabled-password \
