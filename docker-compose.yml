@@ -1,14 +1,64 @@
 version: "3.9"
 
 services:
-  app:
+
+  database:
+    container_name: movielens-database
+    environment:
+      - POSTGRES_DB=devdb
+      - POSTGRES_USER=devuser
+      - POSTGRES_PASSWORD=user@dev
+    image: postgres:14.5
+    ports:
+      - "5433:5432"
+    volumes:
+      - movielens-database:/var/lib/postgresql/data
+
+  srv:
     build:
       context: .
-      args:
-        - DEV=true
+    container_name: movielens-srv
+    depends_on:
+      - database
+    environment:
+      - SQL_ENGINE=django.db.backends.postgresql
+      - SQL_DATABASE=movielens
+      - SQL_USER=devuser
+      - SQL_PASSWORD=user@dev
+      - SQL_HOST=movielens-database
+      - SQL_PORT=5432
+    command: [ "bash", "start.sh" ]
     ports:
-      - "8000:8000"
+      - 8003:8000
     volumes:
-      - ./app:/app
-    command: >
-      sh -c "python manage.py runserver 0.0.0.0:8000"
+      - ./app:/srv/usr/src/app
+
+  elasticsearch:
+    container_name: es-container
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.6
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+    networks:
+      - movielens
+    ports:
+      - 9200:9200
+  kibana:
+    container_name: kb-container
+    image: docker.elastic.co/kibana/kibana:7.17.6
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es-container:9200
+    networks:
+      - movielens
+    depends_on:
+      - elasticsearch
+    ports:
+      - 5601:5601
+
+volumes:
+  movielens-database:
+
+
+networks:
+  movielens:
+    driver: bridge
